@@ -2,7 +2,7 @@
 
 安装
 ```bash
-pip -r requirements.txt
+pip install -r requirements.txt
 ```
 
 运行服务节点
@@ -13,4 +13,8 @@ python main.py node
 运行挖矿节点
 ```
 python main.py server
+```
+开始挖矿
+```
+python main.py run
 ```

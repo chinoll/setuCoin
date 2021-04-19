@@ -11,7 +11,7 @@ from tornado.options import define, options
 import json
 from flask import Flask
 import asyncio
-
+import requests
 server = ["127.0.0.1:8787"]
 
 class Application(tornado.web.Application):
@@ -24,7 +24,6 @@ class Application(tornado.web.Application):
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
         pass
-        #self.render("index.html", messages=ChatSocketHandler.cache)
 
 
 class chainbase(tornado.websocket.WebSocketHandler):
@@ -91,7 +90,6 @@ class update_chain(chainbase):
         update_chain.waiters.remove(self)
 
     def on_message(self, message):
-        #print(message)
         newchain = chain.Chain(chain=message)
         if _chain.replaceChain(newchain.chain):
             update_chain.update_cache(str(newchain))
@@ -124,3 +122,6 @@ if __name__ == '__main__':
             ws.send(str(_chain))
             return str(_chain)
         app.run(host='localhost',port=8383)
+    elif sys.argv[1] == "run":
+        while True:
+            print(requests.get("http://localhost:8383/mineBlock").text)
