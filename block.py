@@ -15,9 +15,3 @@ def calcSHA256(index,timestamp,previous_hash,data):
     sha = hashlib.sha256()
     sha.update((str(index) + str(timestamp) + previous_hash + data).encode('utf-8'))
     return sha.hexdigest()
-def generateNextBlock(data):
-    index = len(block) + 1
-    timestamp = current_milli_time()
-    b = block[-1].sha256
-    sha = calcSHA256(index,timestamp,b,data)
-    return Block(index,timestamp,sha,b,data)

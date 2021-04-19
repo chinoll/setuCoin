@@ -1,31 +1,33 @@
 import sys
 import http
-import websockets
+from websocket import create_connection
 import asyncio
 import chain
-import pickle
-import logging
 import tornado.ioloop
 import tornado.options
 import tornado.web
 import tornado.websocket
 from tornado.options import define, options
 import json
+from flask import Flask
+import asyncio
+
 server = ["127.0.0.1:8787"]
 
 class Application(tornado.web.Application):
     def __init__(self):
-        handlers = [(r"/", MainHandler), (r"/chatsocket", ChatSocketHandler)]
+        handlers = [(r"/", MainHandler), (r"/query_all", query_all),(r"/query_lastet",query_lastet),("/update_chain",update_chain)]
         settings = {}
         super().__init__(handlers, **settings)
 
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
-        self.render("index.html", messages=ChatSocketHandler.cache)
+        pass
+        #self.render("index.html", messages=ChatSocketHandler.cache)
 
 
-class ChatSocketHandler(tornado.websocket.WebSocketHandler):
+class chainbase(tornado.websocket.WebSocketHandler):
     waiters = set()
     cache = []
     cache_size = 200
@@ -34,10 +36,10 @@ class ChatSocketHandler(tornado.websocket.WebSocketHandler):
         return {}
 
     def open(self):
-        ChatSocketHandler.waiters.add(self)
+        chainbase.waiters.add(self)
 
     def on_close(self):
-        ChatSocketHandler.waiters.remove(self)
+        chainbase.waiters.remove(self)
 
     @classmethod
     def update_cache(cls, chat):
@@ -47,7 +49,6 @@ class ChatSocketHandler(tornado.websocket.WebSocketHandler):
 
     @classmethod
     def send_updates(cls, chat):
-        logging.info("broadcast")
         for waiter in cls.waiters:
             try:
                 waiter.write_message(chat)
@@ -55,18 +56,71 @@ class ChatSocketHandler(tornado.websocket.WebSocketHandler):
                 logging.error("Error sending message", exc_info=True)
 
     def on_message(self, message):
-        j = json.dumps(message)
-        
-        ChatSocketHandler.update_cache(message)
-        ChatSocketHandler.send_updates(message)
+        pass
+
+class query_all(chainbase):
+    def open(self):
+        update_chain.waiters.add(self)
+
+    def on_close(self):
+        update_chain.waiters.remove(self)
+
+    def on_message(self, message):
+        if message == "OK":
+            query_all.update_cache(str(_chain))
+            query_all.send_updates(str(_chain))
+
+class query_lastet(chainbase):
+    def open(self):
+        update_chain.waiters.add(self)
+
+    def on_close(self):
+        update_chain.waiters.remove(self)
+
+    def on_message(self, message):
+        if message == "OK":
+            d = json.dumps([_chain.chain[-1].__dict__])
+            query_lastet.update_cache(d)
+            query_lastet.send_updates(d)
+
+class update_chain(chainbase):
+    def open(self):
+        update_chain.waiters.add(self)
+
+    def on_close(self):
+        update_chain.waiters.remove(self)
+
+    def on_message(self, message):
+        #print(message)
+        newchain = chain.Chain(chain=message)
+        if _chain.replaceChain(newchain.chain):
+            update_chain.update_cache(str(newchain))
+            update_chain.send_updates(str(newchain))
+
 
 if __name__ == '__main__':
+    _chain = chain.Chain(db_path = 'chain.json')
     if sys.argv[1] == 'node':
-        chain = chain.Chain('chain.json')
         define("port", default=8989, help="run on the given port", type=int)
         tornado.options.parse_command_line()
         app = Application()
         app.listen(options.port)
         tornado.ioloop.IOLoop.current().start()
-    else:
-        pass
+    elif sys.argv[1] == "server":
+        app = Flask(__name__)
+        @app.route('/')
+        def hello():
+            return "hello"
+        @app.route("/blocks")
+        def get_blocks():
+            ws = create_connection("ws://localhost:8989/query_all")
+            ws.send("OK")
+            return ws.recv()
+        @app.route("/mineBlock")
+        def mineBlock():
+            _chain.generateNextBlock("")
+            print(str(_chain))
+            ws = create_connection("ws://localhost:8989/update_chain")
+            ws.send(str(_chain))
+            return str(_chain)
+        app.run(host='localhost',port=8383)
