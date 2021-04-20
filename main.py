@@ -117,7 +117,6 @@ if __name__ == '__main__':
         @app.route("/mineBlock")
         def mineBlock():
             _chain.generateNextBlock("")
-            print(str(_chain))
             ws = create_connection("ws://localhost:8989/update_chain")
             ws.send(str(_chain))
             return str(_chain)

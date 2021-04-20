@@ -1,6 +1,6 @@
 import block
 import json
-
+import time
 class Chain:
     def __init__(self,db_path=None,chain=""):
         db = None
@@ -12,7 +12,7 @@ class Chain:
 
         temp = []
         for i in db:
-            temp.append(block.Block(i["index"],i["timestamp"],i["sha256"],i["previous_hash"],i["data"]))
+            temp.append(block.Block(i["index"],i["timestamp"],i["sha256"],i["previous_hash"],i["data"],i["difficulty"],i["nonce"]))
         if self.isValidChain(temp):
             self.chain = temp
     def __str__(self):
@@ -26,7 +26,7 @@ class Chain:
         elif prev_block.sha256 != _block.previous_hash:
             print("invalid previous hash")
             return False
-        elif block.calcSHA256(_block.index,_block.timestamp,_block.previous_hash,_block.data) != _block.sha256:
+        elif block.calcSHA256(_block.index,_block.timestamp,_block.previous_hash,_block.data,_block.difficulty,_block.nonce) != _block.sha256 and not self.hashMatchesDifficulty(_block.sha256,_block.difficulty):
             print("invalid block!")
             return False
         return True
@@ -55,7 +55,39 @@ class Chain:
     def generateNextBlock(self,data):
         index = len(self.chain)
         timestamp = block.current_milli_time()
-        b = self.chain[-1].sha256
-        sha = block.calcSHA256(index,timestamp,b,data)
-        b = block.Block(index,timestamp,sha,b,data)
-        self.chain.append(b)
+        latestBlock_hash = self.chain[-1].sha256
+        nonce = 0
+        difficulty = self.getDifficuly()
+        while True:
+            hash = block.calcSHA256(index,timestamp,latestBlock_hash,data,difficulty,nonce)
+            if not self.hashMatchesDifficulty(hash,difficulty):
+                nonce += 1
+            else:
+                self.chain.append(block.Block(index,timestamp,hash,latestBlock_hash,data,difficulty,nonce))
+                return
+    def getDifficuly(self):
+        latestBlock = self.chain[-1]
+        if latestBlock.index % block.DIFFICULTY_ADJUSTMENT_INTERVAL == 0 and latestBlock.index != 0:
+            return self.getAdjustedDifficulty(latestBlock)
+        else:
+            return latestBlock.difficulty
+
+    def getAdjustedDifficulty(self,latestBlock):
+        #难易度调整
+        prevAdjustmentBlock = self.chain[len(self.chain) - block.DIFFICULTY_ADJUSTMENT_INTERVAL]
+        time_excepted = block.BLOCK_GENERATION_INTERVAL * block.DIFFICULTY_ADJUSTMENT_INTERVAL
+        time_taken = int(str(latestBlock.timestamp)[:10]) - int(str(prevAdjustmentBlock.timestamp)[:10])
+        if time_taken < time_excepted / 2:
+            return prevAdjustmentBlock.difficulty + 1
+        elif time_taken > time_excepted * 2:
+            return prevAdjustmentBlock.difficulty - 1
+        else:
+            return prevAdjustmentBlock.difficulty
+    
+    def isValidTimestamp(self,mewblock,prevblock):
+        return newblock.timestamp - 60 < int(time.time()) and prevblock.timestamp - 60 < newblock.timestamp
+
+    def hashMatchesDifficulty(self,hash,difficulty):
+        x = bin(int(hash,16))[2:]
+        zero_prefix = "1"*difficulty
+        return x.startswith(zero_prefix)
