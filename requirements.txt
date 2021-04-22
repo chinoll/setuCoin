@@ -2,4 +2,3 @@ websocket-client
 tornado
 flask
 requests
-numba
