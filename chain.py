@@ -1,6 +1,8 @@
 import block
 import json
 import time
+import transaction
+import wallet
 class Chain:
     def __init__(self,db_path=None,chain=""):
         db = None
@@ -52,7 +54,21 @@ class Chain:
             return False
         return True
 
-    def generateNextBlock(self,data):
+    def generateNextBlock(self):
+        #wallet = wallet.wallet()
+        #wallet.load_wallet("wallet/private_key.key")
+        #coinbase_tx = transaction.get_coinbase_transaction(wallet.public_key,len(self.chain))
+        self.generateRawNextBlock("")
+    def generatenextBlockWithTransaction(self,address,amount):
+        if not transaction.is_valid_address(address):
+            print('invalid address')
+            return
+        if type(amount) != int:
+            print("invalid amount")
+            return
+        coinbaseTx = transaction.get_coinbase_transaction(address,len(self.chain))
+        tx = 
+    def generateRawNextBlock(self,data):
         index = len(self.chain)
         timestamp = block.current_milli_time()
         latestBlock_hash = self.chain[-1].sha256
