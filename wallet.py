@@ -37,4 +37,4 @@ def create_transaction(receiver_address,amount,private_key,unspent_txout_lst,tx_
             txout_lst.append(i)
 
 def filter_txpool(unspentTxOuts,transactionPool):
-    txin_lst = 
+    pass
