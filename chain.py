@@ -55,19 +55,20 @@ class Chain:
         return True
 
     def generateNextBlock(self):
-        #wallet = wallet.wallet()
-        #wallet.load_wallet("wallet/private_key.key")
-        #coinbase_tx = transaction.get_coinbase_transaction(wallet.public_key,len(self.chain))
-        self.generateRawNextBlock("")
+        user_wallet = wallet.wallet()
+        user_wallet.load_wallet("wallet/private_key.key")
+        coinbase_tx = transaction.get_coinbase_transaction(user_wallet.public_key,len(self.chain))
+        r = json.dumps([json.loads(str(coinbase_tx))],sort_keys=True, indent=4, separators=(',', ':'),ensure_ascii=False)
+        self.generateRawNextBlock(r)
     def generatenextBlockWithTransaction(self,address,amount):
-        if not transaction.is_valid_address(address):
+        '''if not transaction.is_valid_address(address):
             print('invalid address')
             return
         if type(amount) != int:
             print("invalid amount")
             return
         coinbaseTx = transaction.get_coinbase_transaction(address,len(self.chain))
-        tx = 
+        tx = '''
     def generateRawNextBlock(self,data):
         index = len(self.chain)
         timestamp = block.current_milli_time()
@@ -81,6 +82,7 @@ class Chain:
             else:
                 self.chain.append(block.Block(index,timestamp,hash,latestBlock_hash,data,difficulty,nonce))
                 return
+
     def getDifficuly(self):
         latestBlock = self.chain[-1]
         if latestBlock.index % block.DIFFICULTY_ADJUSTMENT_INTERVAL == 0 and latestBlock.index != 0:

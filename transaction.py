@@ -1,6 +1,6 @@
 from typing import List
 import hashlib
-import ecdsa import SigningKey, SECP256k1
+from ecdsa import SigningKey,SECP256k1
 import re
 import json
 class Txoutput:
@@ -31,7 +31,7 @@ class unspent_txout:
         return json.dumps(r,sort_keys=True, indent=4, separators=(',', ':'),ensure_ascii=False)
 
 class transaction:
-    def __init__(self, tx_ins:List[TxInput], tx_outs:List[Txoutput]):
+    def __init__(self, tx_ins:list, tx_outs:list):
         self.tx_ins = tx_ins
         self.tx_outs = tx_outs
         self.id = self.get_transaction_id()
@@ -41,10 +41,10 @@ class transaction:
         return json.dumps(r,sort_keys=True, indent=4, separators=(',', ':'),ensure_ascii=False)
 
     def get_transaction_id(self):
-        txInContent = "".join([str(i[0].txOutId) + str(i[1].txOutIndex) for i in self.tx_ins])
-        txOutContent = "".join([i.address + str(i[1].amount) for i in self.tx_outs])
+        txInContent = "".join([str(i.txout_id) + str(i.tx_out_index) for i in self.tx_ins])
+        txOutContent = "".join([i.address + str(i.amount) for i in self.tx_outs])
         sha256 = hashlib.sha256()
-        sha256.update(txInContent + txOutContent)
+        sha256.update((txInContent + txOutContent).encode("utf-8"))
         return sha256.hexdigest()
 
     def find_unspent_txout(self,transaction_id,index,unspent_txouts:List[unspent_txout]):
@@ -155,7 +155,7 @@ def is_valid_address(address):
     return True
 
 def get_coinbase_transaction(address,block_index):
-    txin = TxInput()
+    txin = TxInput("",block_index,"")
     txout = Txoutput(address,chain_amount)
     t = transaction([txin],[txout])
     return t
